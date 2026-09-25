@@ -18,12 +18,40 @@
  *   CODEOWNERS_FILE   - Path to CODEOWNERS file (default: CODEOWNERS)
  *   CHANGED_FILES     - Newline-separated list of files (for webhook optimization)
  *   TARGET_BRANCH     - Target branch (default: main) (for CODEOWNERS file)
+ *   TEAM_MEMBERS_TOKEN - Token used only for org team-membership lookups
+ *                        (optional; defaults to GITHUB_TOKEN)
+ *
+ * Organization placeholder:
+ *   Owner entries in the CODEOWNERS file may use "%" in place of the
+ *   organization name, e.g. "@%/platform-ci". The placeholder is expanded to
+ *   the organization of the repository the action is running in, which lets a
+ *   single CODEOWNERS file be shared across multiple organizations.
  */
 
 const token = process.env.GITHUB_TOKEN;
+const teamToken = process.env.TEAM_MEMBERS_TOKEN || process.env.GITHUB_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
 const [owner, repo] = repository?.split("/") || [];
-const team_start_with = process.env.TEAM_START_WITH || "@";
+
+/**
+ * Expand the "%" organization placeholder in a CODEOWNERS owner token.
+ *
+ * Only the exact "@%/" prefix is treated as a placeholder, so "@user",
+ * "@org/team", emails and anything else containing a stray "%" pass through
+ * untouched. "%" is not a legal character in a GitHub organization name, so
+ * this can never collide with a real owner.
+ */
+function expandOrgPlaceholder(name, org) {
+  if (!org || typeof name !== "string" || !name.startsWith("@%/")) {
+    return name;
+  }
+  return `@${org}/${name.slice(3)}`;
+}
+
+const team_start_with = expandOrgPlaceholder(
+  process.env.TEAM_START_WITH || "@",
+  owner,
+);
 const prNumber = process.env.PR_NUMBER;
 const dryRun = process.env.DRY_RUN !== "false";
 const codeownersFile = process.env.CODEOWNERS_FILE || "CODEOWNERS";
@@ -386,7 +414,9 @@ async function getAllChangedFiles(headers) {
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-      throw new Error(`Failed to fetch PR files page ${page}: ${response.status}`);
+      throw new Error(
+        `Failed to fetch PR files page ${page}: ${response.status}`,
+      );
     }
 
     const files = await response.json();
@@ -419,7 +449,9 @@ async function getAllReviews(headers) {
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-      throw new Error(`Failed to fetch reviews page ${page}: ${response.status}`);
+      throw new Error(
+        `Failed to fetch reviews page ${page}: ${response.status}`,
+      );
     }
 
     const reviews = await response.json();
@@ -452,7 +484,9 @@ async function getAllCommits(headers) {
 
     const response = await fetch(url, { headers });
     if (!response.ok) {
-      throw new Error(`Failed to fetch commits page ${page}: ${response.status}`);
+      throw new Error(
+        `Failed to fetch commits page ${page}: ${response.status}`,
+      );
     }
 
     const commits = await response.json();
@@ -474,7 +508,7 @@ async function getAllCommits(headers) {
   return allCommits;
 }
 
-function parseCodeowners(content) {
+function parseCodeowners(content, org = owner) {
   const lines = content.split("\n");
   const owners = [];
 
@@ -484,7 +518,12 @@ function parseCodeowners(content) {
       const parts = trimmed.split(/\s+/);
       if (parts.length >= 2) {
         const path = parts[0];
-        const ownersList = parts.slice(1);
+        // Expand the "%" organization placeholder here, at the single point
+        // where owner tokens enter the system, so every downstream matcher and
+        // log line sees the resolved organization.
+        const ownersList = parts
+          .slice(1)
+          .map((name) => expandOrgPlaceholder(name, org));
         owners.push({ path, owners: ownersList });
       }
     }
@@ -562,7 +601,7 @@ async function checkTeamMembership(username, teamSlug, headers) {
   try {
     const response = await fetch(
       `https://api.github.com/orgs/${owner}/teams/${teamSlug}/members/${username}`,
-      { headers },
+      { headers: { ...headers, Authorization: `Bearer ${teamToken}` } },
     );
     return response.status === 204;
   } catch (error) {
@@ -610,9 +649,13 @@ if (require.main === module) {
   smartDismissReviews();
 }
 
-module.exports = { 
+module.exports = {
   smartDismissReviews,
   getAllChangedFiles,
   getAllReviews,
-  getAllCommits
+  getAllCommits,
+  expandOrgPlaceholder,
+  parseCodeowners,
+  getFileOwnersHierarchical,
+  teamStartWith: team_start_with,
 };

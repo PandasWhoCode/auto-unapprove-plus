@@ -9,6 +9,10 @@ inputs:
   github-token:
     description: "GitHub token"
     required: true
+  team-token:
+    description: "Token used only for organization team-membership lookups. Falls back to github-token when unset."
+    required: false
+    default: ""
   pr-number:
     description: "Pull request number"
     required: true
@@ -36,6 +40,7 @@ runs:
       shell: bash
       run: |
         export GITHUB_TOKEN="${{ inputs.github-token }}"
+        export TEAM_MEMBERS_TOKEN="${{ inputs.team-token }}"
         export PR_NUMBER="${{ inputs.pr-number }}"
         export DRY_RUN="${{ inputs.dry-run }}"
         export CODEOWNERS_FILE="${{ inputs.code-owners-file }}"

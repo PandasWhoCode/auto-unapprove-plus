@@ -20,7 +20,12 @@ echo "   Testing with mock GitHub API responses..."
 node test-mock-pagination.js
 echo ""
 
-echo "3. Checking for real data test setup..."
+echo "3. Running org placeholder tests..."
+echo "   Testing %-to-organization expansion in CODEOWNERS..."
+node test-codeowners-percent.js || exit 1
+echo ""
+
+echo "4. Checking for real data test setup..."
 echo "   To test with real GitHub data, run:"
 echo "   export GITHUB_TOKEN='your_token'"
 echo "   export GITHUB_REPOSITORY='owner/repo'"
