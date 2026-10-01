@@ -15,17 +15,17 @@
  *   GITHUB_REPOSITORY - Repository in format owner/repo (required)
  *   TEAM_START_WITH   - Team prefix (default: @)
  *   DRY_RUN           - Set to 'false' for actual dismissals (default: true)
- *   CODEOWNERS_FILE   - Path to CODEOWNERS file (default: CODEOWNERS)
+ *   CODEOWNERS_FILE   - Path to CODEOWNERS file (default: .codeowners)
  *   CHANGED_FILES     - Newline-separated list of files (for webhook optimization)
  *   TARGET_BRANCH     - Target branch (default: main) (for CODEOWNERS file)
  *   TEAM_MEMBERS_TOKEN - Token used only for org team-membership lookups
  *                        (optional; defaults to GITHUB_TOKEN)
  *
  * Organization placeholder:
- *   Owner entries in the CODEOWNERS file may use "%" in place of the
- *   organization name, e.g. "@%/platform-ci". The placeholder is expanded to
- *   the organization of the repository the action is running in, which lets a
- *   single CODEOWNERS file be shared across multiple organizations.
+ *   Team entries in the CODEOWNERS file may be written "%/team-name" in place
+ *   of "@org/team-name". The placeholder is expanded to the organization of
+ *   the repository the action is running in, which lets a single CODEOWNERS
+ *   file be shared across multiple organizations. Users stay "@user".
  */
 
 const token = process.env.GITHUB_TOKEN;
@@ -36,16 +36,18 @@ const [owner, repo] = repository?.split("/") || [];
 /**
  * Expand the "%" organization placeholder in a CODEOWNERS owner token.
  *
- * Only the exact "@%/" prefix is treated as a placeholder, so "@user",
- * "@org/team", emails and anything else containing a stray "%" pass through
- * untouched. "%" is not a legal character in a GitHub organization name, so
- * this can never collide with a real owner.
+ * Only a "%/" prefix followed by a team slug is treated as a placeholder, so
+ * "@user", "@org/team", emails, the legacy "@%/team" form and anything else
+ * containing a stray "%" pass through untouched. "%" is not a legal character
+ * in a GitHub organization name, so this can never collide with a real owner.
+ *
+ * The bare "%/" prefix (as used for TEAM_START_WITH) expands to "@org/".
  */
 function expandOrgPlaceholder(name, org) {
-  if (!org || typeof name !== "string" || !name.startsWith("@%/")) {
+  if (!org || typeof name !== "string" || !name.startsWith("%/")) {
     return name;
   }
-  return `@${org}/${name.slice(3)}`;
+  return `@${org}/${name.slice(2)}`;
 }
 
 const team_start_with = expandOrgPlaceholder(
@@ -54,7 +56,7 @@ const team_start_with = expandOrgPlaceholder(
 );
 const prNumber = process.env.PR_NUMBER;
 const dryRun = process.env.DRY_RUN !== "false";
-const codeownersFile = process.env.CODEOWNERS_FILE || "CODEOWNERS";
+const codeownersFile = process.env.CODEOWNERS_FILE || ".codeowners";
 const targetBranch = process.env.TARGET_BRANCH || "main";
 
 async function smartDismissReviews() {
@@ -513,8 +515,19 @@ function parseCodeowners(content, org = owner) {
   const owners = [];
 
   lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith("#")) {
+    // Strip inline comments so "* @team # why" does not turn "#" and "why"
+    // into owners.
+    let trimmed = line.split("#")[0].trim();
+    // codeowners-plus rule prefixes: "&" (an additional required reviewer) is
+    // still an owner whose approval must be dismissed, while "?" (an optional
+    // reviewer) is never a required approval, so it is skipped.
+    if (trimmed.startsWith("?")) {
+      return;
+    }
+    if (trimmed.startsWith("&")) {
+      trimmed = trimmed.slice(1).trim();
+    }
+    if (trimmed) {
       const parts = trimmed.split(/\s+/);
       if (parts.length >= 2) {
         const path = parts[0];
