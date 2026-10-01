@@ -416,7 +416,7 @@ async function getAllChangedFiles(headers) {
   let page = 1;
   const perPage = 100; // Maximum allowed by GitHub API
 
-  while (true) {
+  for (;;) {
     const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/files?page=${page}&per_page=${perPage}`;
     console.log(`   📄 Fetching page ${page}...`);
 
@@ -451,7 +451,7 @@ async function getAllReviews(headers) {
   let page = 1;
   const perPage = 100; // Maximum allowed by GitHub API
 
-  while (true) {
+  for (;;) {
     const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/reviews?page=${page}&per_page=${perPage}`;
     console.log(`   📋 Fetching reviews page ${page}...`);
 
@@ -486,7 +486,7 @@ async function getAllCommits(headers) {
   let page = 1;
   const perPage = 100; // Maximum allowed by GitHub API
 
-  while (true) {
+  for (;;) {
     const url = `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/commits?page=${page}&per_page=${perPage}`;
     console.log(`   📝 Fetching commits page ${page}...`);
 
