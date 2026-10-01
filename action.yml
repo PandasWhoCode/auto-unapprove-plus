@@ -29,7 +29,7 @@ inputs:
     required: false
     default: "main"
   team-start-with:
-    description: "Team start with. Use \"%/\" to match this repository's organization."
+    description: "Team start with. Use \"%\" to match this repository's organization."
     required: false
     default: "@your-org/"
 

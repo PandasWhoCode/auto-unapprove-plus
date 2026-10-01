@@ -92,7 +92,7 @@ node auto-unapprove.js
 ![Action Flow](images/action-flow.png)
 
 1. **Get all changed files** from the entire PR (not just latest commit)
-2. **Parse CODEOWNERS** from the PR target branch (not default branch) using hierarchical path matching (most specific wins), expanding any `%/team` organization placeholder
+2. **Parse CODEOWNERS** from the PR target branch (not default branch) using hierarchical path matching (most specific wins), expanding any `%team` organization placeholder
 3. **Check team memberships** via GitHub API for relevant teams only
 4. **Analyze approval timeline** - detect commits made after approval
 5. **Smart dismissal logic**:
@@ -151,7 +151,7 @@ _For more workflow examples, see [`example-workflow.yml`](./example-workflow.yml
 - ✅ **Stale approval detection**: Automatically detects and dismisses approvals made stale by subsequent commits
 - ✅ **Surgical precision**: Only dismisses when owned files are actually modified 
 - ✅ **Team support**: Full GitHub team membership validation via API
-- ✅ **Organization placeholder**: Write `%/team` to share one CODEOWNERS file across multiple organizations
+- ✅ **Organization placeholder**: Write `%team` to share one CODEOWNERS file across multiple organizations
 - ✅ **Timeline analysis**: Compares approval timestamps with commit timestamps
 - ✅ **Hierarchical CODEOWNERS**: Proper path matching with most-specific-wins logic
 - ✅ **Performance optimized**: Parallel API calls and efficient team checking
@@ -194,38 +194,38 @@ _For more workflow examples, see [`example-workflow.yml`](./example-workflow.yml
    • Approvals preserved: 1
 ```
 
-## 🏢 **Organization Placeholder (`%/`)**
+## 🏢 **Organization Placeholder (`%`)**
 
 A CODEOWNERS team reference is organization-qualified, which normally prevents
 the same file from being shared across two organizations. Write a team as
-`%/team-name` and `%` is expanded to the organization of the repository the
+`%team-name` and `%` is expanded to the organization of the repository the
 action is running in. Users are still written `@user`:
 
 ```
 # .codeowners - identical in every organization
-*                 %/platform-ci
-/docs/            %/docs-team @alice
+*                 %platform-ci
+/docs/            %docs-team @alice
 ```
 
 In `swirldslabs/chewie-sandbox` that resolves to `@swirldslabs/platform-ci`; in
 `PandasWhoCode/chewie-sandbox` it resolves to `@PandasWhoCode/platform-ci`.
 
-Set `team-start-with` to `%/` so the team prefix resolves the same way:
+Set `team-start-with` to `%` so the team prefix resolves the same way:
 
 ```yaml
 with:
-  team-start-with: "%/"
+  team-start-with: "%"
 ```
 
 Notes:
 
-- Only the `%/` prefix is a placeholder. `@user`, `@org/team`, emails and any
-  other use of `%` pass through untouched.
-- **Breaking change:** the earlier `@%/team` form is no longer expanded. Rewrite
-  such entries as `%/team`.
+- Only a leading `%` followed directly by the team name is a placeholder.
+  `@user`, `@org/team`, emails and any other use of `%` pass through untouched.
+- **Breaking change:** the earlier `@%/team` and `%/team` forms are no longer
+  expanded. Rewrite such entries as `%team`.
 - `%` is not a legal character in a GitHub organization name, so there is no
   possibility of collision with a real owner.
-- GitHub's own CODEOWNERS UI does not understand `%/team` and will flag such
+- GitHub's own CODEOWNERS UI does not understand `%team` and will flag such
   lines as unknown owners. This matters only if you also rely on GitHub's native
   "Require review from Code Owners" branch protection.
 
@@ -239,7 +239,7 @@ Its rule prefixes are understood:
   treated as code owners, so their approvals are dismissed like any other owner's.
 - `?` (optional reviewer): the line is skipped, because an optional reviewer is
   never a required approval.
-- Inline comments (`* %/team # why`) are stripped.
+- Inline comments (`* %team # why`) are stripped.
 
 Only the root file named by `code-owners-file` is read; per-directory
 `.codeowners` files are not.
@@ -255,7 +255,7 @@ Only the root file named by `code-owners-file` is read; per-directory
 | `dry-run` | - | `true` | Set to 'false' for actual dismissals |
 | `code-owners-file` | - | `.codeowners` | Path to CODEOWNERS file |
 | `target-branch` | - | `main` | Target branch to read CODEOWNERS from |
-| `team-start-with` | - | `@your-org/` | Team prefix for organization. Supports the `%/` placeholder. |
+| `team-start-with` | - | `@your-org/` | Team prefix for organization. Supports the `%` placeholder. |
 
 ### **Environment Variables** (Direct Script Usage)
 | Variable | Required | Default | Description |
@@ -264,7 +264,7 @@ Only the root file named by `code-owners-file` is read; per-directory
 | `PR_NUMBER` | ✅ | - | Pull request number to analyze |
 | `GITHUB_REPOSITORY` | ✅ | - | Repository in owner/repo format |
 | `TEAM_MEMBERS_TOKEN` | - | `GITHUB_TOKEN` | Token used only for organization team-membership lookups |
-| `TEAM_START_WITH` | - | `@` | Team prefix for organization. Supports the `%/` placeholder. |
+| `TEAM_START_WITH` | - | `@` | Team prefix for organization. Supports the `%` placeholder. |
 | `DRY_RUN` | - | `true` | Set to 'false' for actual dismissals |
 | `CODEOWNERS_FILE` | - | `.codeowners` | Path to CODEOWNERS file |
 | `TARGET_BRANCH` | - | `main` | Target branch to read CODEOWNERS from |

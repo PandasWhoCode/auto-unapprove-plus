@@ -22,7 +22,7 @@
  *                        (optional; defaults to GITHUB_TOKEN)
  *
  * Organization placeholder:
- *   Team entries in the CODEOWNERS file may be written "%/team-name" in place
+ *   Team entries in the CODEOWNERS file may be written "%team-name" in place
  *   of "@org/team-name". The placeholder is expanded to the organization of
  *   the repository the action is running in, which lets a single CODEOWNERS
  *   file be shared across multiple organizations. Users stay "@user".
@@ -36,18 +36,24 @@ const [owner, repo] = repository?.split("/") || [];
 /**
  * Expand the "%" organization placeholder in a CODEOWNERS owner token.
  *
- * Only a "%/" prefix followed by a team slug is treated as a placeholder, so
- * "@user", "@org/team", emails, the legacy "@%/team" form and anything else
- * containing a stray "%" pass through untouched. "%" is not a legal character
- * in a GitHub organization name, so this can never collide with a real owner.
+ * Only a leading "%" followed directly by the team slug ("%team") is treated
+ * as a placeholder, so "@user", "@org/team", emails, the old "%/team" and
+ * "@%/team" forms and anything else containing a stray "%" pass through
+ * untouched. "%" is not a legal character in a GitHub organization name, so
+ * this can never collide with a real owner.
  *
- * The bare "%/" prefix (as used for TEAM_START_WITH) expands to "@org/".
+ * A bare "%" (as used for TEAM_START_WITH) expands to "@org/".
  */
 function expandOrgPlaceholder(name, org) {
-  if (!org || typeof name !== "string" || !name.startsWith("%/")) {
+  if (
+    !org ||
+    typeof name !== "string" ||
+    !name.startsWith("%") ||
+    name.startsWith("%/")
+  ) {
     return name;
   }
-  return `@${org}/${name.slice(2)}`;
+  return `@${org}/${name.slice(1)}`;
 }
 
 const team_start_with = expandOrgPlaceholder(
