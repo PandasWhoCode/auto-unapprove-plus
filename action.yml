@@ -1,6 +1,6 @@
-name: "Auto Unapprove Reviews"
+name: "Auto Unapprove Plus"
 description: "Dismiss pull request reviews when code owners change files"
-author: "Rotem Kalman"
+author: "PandasWhoCode"
 branding:
   icon: "check-circle"
   color: "green"
