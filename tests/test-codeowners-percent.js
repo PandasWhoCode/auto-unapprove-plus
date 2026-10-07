@@ -17,18 +17,7 @@ const {
   teamStartWith,
 } = require("../auto-unapprove.js");
 
-let failures = 0;
-
-function check(name, actual, expected) {
-  const a = JSON.stringify(actual);
-  const e = JSON.stringify(expected);
-  if (a === e) {
-    console.log(`   ✅ ${name}`);
-  } else {
-    console.log(`   ❌ ${name}\n      expected: ${e}\n      actual:   ${a}`);
-    failures++;
-  }
-}
+const { check, finish } = require("./check.js");
 
 console.log("🧪 ORG PLACEHOLDER TESTS");
 console.log("========================");
@@ -155,8 +144,4 @@ check(
 );
 console.log("");
 
-if (failures > 0) {
-  console.log(`❌ ${failures} test(s) failed`);
-  process.exit(1);
-}
-console.log("✅ All org placeholder tests passed!");
+finish("✅ All org placeholder tests passed!");
