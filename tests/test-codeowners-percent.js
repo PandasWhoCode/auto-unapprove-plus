@@ -98,38 +98,42 @@ const content = [
 ].join("\n");
 
 check("expands the catch-all rule", parseCodeowners(content, "swirldslabs"), [
-  { path: "*", owners: ["@swirldslabs/platform-ci"] },
-  { path: "/docs/", owners: ["@swirldslabs/docs-team", "@alice"] },
-  { path: "/legacy/", owners: ["@hiero-ledger/ci"] },
+  { path: "*", owners: ["@swirldslabs/platform-ci"], additional: false },
+  {
+    path: "/docs/",
+    owners: ["@swirldslabs/docs-team", "@alice"],
+    additional: false,
+  },
+  { path: "/legacy/", owners: ["@hiero-ledger/ci"], additional: false },
 ]);
 
 check(
   "resolves the same file differently per org",
   parseCodeowners(content, "PandasWhoCode")[0],
-  { path: "*", owners: ["@PandasWhoCode/platform-ci"] },
+  { path: "*", owners: ["@PandasWhoCode/platform-ci"], additional: false },
 );
 
 check(
   "defaults the org to GITHUB_REPOSITORY's owner",
   parseCodeowners("*  %platform-ci")[0],
-  { path: "*", owners: ["@swirldslabs/platform-ci"] },
+  { path: "*", owners: ["@swirldslabs/platform-ci"], additional: false },
 );
 
 check(
   "strips inline comments",
   parseCodeowners("*  %platform-ci  # catch-all", "swirldslabs"),
-  [{ path: "*", owners: ["@swirldslabs/platform-ci"] }],
+  [{ path: "*", owners: ["@swirldslabs/platform-ci"], additional: false }],
 );
 
 check(
-  "treats & rules as owners",
+  "treats & rules as additional owners",
   parseCodeowners(
     ["&/src/  %security", "& /docs/  @bob"].join("\n"),
     "swirldslabs",
   ),
   [
-    { path: "/src/", owners: ["@swirldslabs/security"] },
-    { path: "/docs/", owners: ["@bob"] },
+    { path: "/src/", owners: ["@swirldslabs/security"], additional: true },
+    { path: "/docs/", owners: ["@bob"], additional: true },
   ],
 );
 
@@ -139,7 +143,7 @@ check(
     ["*  %platform-ci", "?/docs/  @carol", "? /src/  %docs-team"].join("\n"),
     "swirldslabs",
   ),
-  [{ path: "*", owners: ["@swirldslabs/platform-ci"] }],
+  [{ path: "*", owners: ["@swirldslabs/platform-ci"], additional: false }],
 );
 console.log("");
 
